@@ -28,6 +28,8 @@ start_link() ->
 %% Local Functions
 %%
 init(_Data) ->
+	World = world:generate(100, 100),
+	turtle:born(),
 	{ok, []}.
 
 handle_call(_Request, _From, State) ->

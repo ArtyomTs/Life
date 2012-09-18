@@ -25,24 +25,26 @@ generate(SizeX, SizeY) ->
 %%
 
 generate_line(0, Size, World) ->
-	generate_cell(Size, 0, World),
-	io:format("~n");
-generate_line(Num, Size, World) ->
-	generate_cell(Size, Num, World),
+	{_Val, NewWorld} = generate_cell(Size, 0, World),
 	io:format("~n"),
-	generate_line(Num - 1, Size, World).
+	NewWorld;
+generate_line(Num, Size, World) ->
+	OldWorld = generate_line(Num - 1, Size, World),
+	{_Val, NewWorld} = generate_cell(Size, Num, OldWorld),
+	io:format("~n"),
+	NewWorld.
 
 
 generate_cell(0, LineNum, World) ->
-	Val = random:uniform(100),
-	dict:append({0, LineNum}, Val, World),
+	Val = 50 + random:uniform(20) - 10,
+	NewWorld = dict:append({0, LineNum}, Val, World),
 	io:format("~3w ", [Val]),
-	Val;
+	{Val, NewWorld};
 generate_cell(Num, LineNum, World) ->
-	OldVal = generate_cell(Num - 1, LineNum, World),
+	{OldVal, OldWorld} = generate_cell(Num - 1, LineNum, World),
 	Val = OldVal + random:uniform(20) - 10,
-	dict:append({Num, LineNum}, Val, World),
+	NewWorld = dict:append({Num, LineNum}, Val, OldWorld),
 	io:format("~3w ", [Val]),
-	Val.
+	{Val, NewWorld}.
 
 					   
