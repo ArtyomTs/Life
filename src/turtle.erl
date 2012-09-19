@@ -12,7 +12,7 @@
 %%
 %% Exported Functions
 %%
--export([born/0, hold/1]).
+-export([born/0, hold/1, get_cell/2]).
 
 %%
 %% API Functions
@@ -43,4 +43,12 @@ store_cell({X, Y, Temp}) ->
 		 	mnesia:write(Cell)
 		  end,
 	mnesia:transaction(Fun).
+
+get_cell(X, Y) ->
+	Fun = 
+        fun() ->
+            mnesia:match_object({cells,X , Y, '_', '_' } )
+        end,
+    {atomic, Results} = mnesia:transaction( Fun),
+    Results.
 	
