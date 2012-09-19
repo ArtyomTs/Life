@@ -12,7 +12,7 @@
 %%
 %% Exported Functions
 %%
--export([born/0, hold/1, get_cell/2]).
+-export([born/0, hold/1, get_cell/2, free_cell/1, settle_creature/2]).
 
 %%
 %% API Functions
@@ -47,8 +47,24 @@ store_cell({X, Y, Temp}) ->
 get_cell(X, Y) ->
 	Fun = 
         fun() ->
-            mnesia:match_object({cells,X , Y, '_', '_' } )
+            mnesia:match_object({cells, X , Y, '_', '_' } )
         end,
-    {atomic, Results} = mnesia:transaction( Fun),
+    {atomic, Results} = mnesia:transaction(Fun),
     Results.
-	
+
+free_cell(Pid) ->
+  	Fun = fun() ->
+    	[P] = mnesia:wread({cells, {'_', '_', '_', Pid} }),
+    	mnesia:write(P#cell{creature=none})
+  	end,
+	{atomic, Results} = mnesia:transaction(Fun),
+	Results.
+
+settle_creature(Data, Pid) ->
+	{X, Y, _, _} = Data,
+  	Fun = fun() ->
+    	[P] = mnesia:wread({cells, {X , Y, '_', '_'} }),
+    	mnesia:write(P#cell{creature=Pid})
+  	end,
+	{atomic, Results} = mnesia:transaction(Fun),
+	Results.
