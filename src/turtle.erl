@@ -31,13 +31,13 @@ born() ->
 %% Store the World
 %%---------------------------
 hold(World) ->
-	lists:foreach(store_cell, dict:to_list(World)),
+	lists:foreach(fun(Cell) -> store_cell(Cell) end, World),
 	ok.
 %%
 %% Local Functions
 %%
 
-store_cell({{X, Y}, Temp}) ->
+store_cell({X, Y, Temp}) ->
 	Cell = #cell{x=X, y=Y, temp=Temp, creature=none},
 	Fun = fun() ->
 		 	mnesia:write(Cell)

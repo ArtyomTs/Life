@@ -17,8 +17,7 @@
 %%
 
 generate(SizeX, SizeY) ->
-	World = dict:new(),
-	generate_line(SizeY, SizeX, World).
+	generate_line(SizeY, SizeX, []).
 
 %%
 %% Local Functions
@@ -37,13 +36,13 @@ generate_line(Num, Size, World) ->
 
 generate_cell(0, LineNum, World) ->
 	Val = 50 + random:uniform(20) - 10,
-	NewWorld = dict:append({0, LineNum}, Val, World),
+	NewWorld = [{0, LineNum, Val} | World],
 	io:format("~3w ", [Val]),
 	{Val, NewWorld};
 generate_cell(Num, LineNum, World) ->
 	{OldVal, OldWorld} = generate_cell(Num - 1, LineNum, World),
 	Val = OldVal + random:uniform(20) - 10,
-	NewWorld = dict:append({Num, LineNum}, Val, OldWorld),
+	NewWorld = [{Num, LineNum, Val} | OldWorld],
 	io:format("~3w ", [Val]),
 	{Val, NewWorld}.
 
