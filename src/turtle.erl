@@ -41,7 +41,7 @@ hold(World) ->
 %%
 
 store_cell({X, Y, Temp}) ->
-	io:format("Storing cell ~w, ~w, ~w~n", [X, Y, Temp]),
+%% 	io:format("Storing cell ~w, ~w, ~w~n", [X, Y, Temp]),
 	Cell = #cells{coord={X, Y}, temp=Temp, creature=none},
 	Fun = fun() ->
 		 	    mnesia:write(Cell)

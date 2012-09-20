@@ -32,7 +32,7 @@ born(X, Y) ->
 
 where_am_i({X, Y}) ->
 	Result = turtle:get_cell(X,Y),
-	io:format("Creature found itself on the ~w cell~n", [Result]),
+%% 	io:format("Creature found itself on the ~w cell~n", [Result]),
 	parse(Result).
 
 parse([]) ->
@@ -44,6 +44,7 @@ parse([{_, {X, Y}, Temp, Creature} | _ ]) ->
 settle_or_run({X, Y, Temp, none}) ->
 	%% remember natural temp for new creature
 	State = {{X, Y, Temp, none}, Temp},
+	io:format("Natural temp is ~w~n", [Temp]),
 	settle(State);
 settle_or_run(Cell) ->
 	{X, Y, Temp , _} = Cell,
@@ -89,9 +90,7 @@ enter(hell, _State) ->
 enter(NewCell, State) ->
 	{NewX, NewY, Temp, _} = NewCell,
 	{{_X, _Y, _Temp, Creature}, NTemp} = State,
-	io:format("Creature ~w ~n", [State]),
 	NewState = {{NewX, NewY, Temp, Creature}, NTemp},
-	io:format("Creature ~w ~n", [NewState]),
 	io:format("Creature on the ~w ~w cell~n", [NewX, NewY]),
 	survive(fate(NewState), NewState).
 
