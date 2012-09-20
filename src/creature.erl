@@ -97,6 +97,10 @@ enter(NewCell, State) ->
 survive(die, _State) ->
 	io:format("Creature died~n"),
 	died;
+survive(reproduce, State) ->
+	io:format("Lets Reproduce!!!~n"),
+	reproduce(State),
+	settle(State);
 survive(_Fate, State) ->
 	settle(State).
 
@@ -104,12 +108,16 @@ fate(State) ->
 	{{_, _, Temp, _}, Ntemp} = State,
 	MinTemp = Ntemp - 20,
 	MaxTemp = Ntemp + 20,
+	MinRTemp = Ntemp - 10,
+	MaxRTemp = Ntemp + 10,
 	io:format("Try to survive with ~w(~w - ~w) in ~w~n", [Ntemp, MinTemp, MaxTemp, Temp]),
 	if
 	Temp > MaxTemp ->
 		Res = die;
 	Temp < MinTemp ->
 		Res = die;
+	(Temp < MaxRTemp) and (Temp > MinRTemp) ->
+		Res = reproduce;
 	true ->
 		Res = live
 	end,
@@ -119,7 +127,9 @@ own({X, Y, Temp, none}, State) ->
 	ok.
 
 reproduce(State) ->
-	ok.
+	io:format("Reproduce State ~w~n", [State]),
+	{{X, Y, _Temp, _Creature}, _NTemp} = State,
+	god:born_creature({X, Y}).
 
 rest() ->
 	receive
