@@ -12,7 +12,7 @@
 %%
 %% Exported Functions
 %%
--export([born/0, die/0, hold/1, get_cell/2, free_cell/1, settle_creature/2, show_the_world/0]).
+-export([born/0, die/0, hold/1, get_cell/2, free_cell/2, settle_creature/2, show_the_world/0]).
 
 %%
 %% API Functions
@@ -47,7 +47,7 @@ store_cell({X, Y, Temp}) ->
 		 	    mnesia:write(Cell)
 		    end,
 	{Res, Message} = mnesia:transaction(Fun),
-	io:format("Result = ~w~n", [Message]),
+%% 	io:format("Result = ~w~n", [Message]),
 	Res.
 
 
@@ -57,24 +57,27 @@ get_cell(X, Y) ->
             mnesia:match_object({cells, {X, Y}, '_', '_' } )
         end,
     {atomic, Results} = mnesia:transaction(Fun),
-    [{_, {X, Y}, Temp, Creatire} | _ ] = Results,
-	{X, Y, Temp, Creatire}.
+	Results.
 
-free_cell(Pid) ->
+free_cell(X, Y) ->
   	Fun = fun() ->
-    	[P] = mnesia:wread({cells, {'_', '_', Pid} }),
+    	[P] = mnesia:wread({cells, {X, Y} }),
     	mnesia:write(P#cells{creature=none})
   	end,
 	{atomic, Results} = mnesia:transaction(Fun),
 	Results.
 
 settle_creature(Data, Pid) ->
-	{Coord, Temp, Creature} = Data,
-	io:format("Try to settle at ~w~n", [Coord]),
+	{X, Y, Temp, Creature} = Data,
+	Coord = {X, Y},
+%% 	io:format("Try to settle at ~w~n", [Coord]),
   	Fun = fun() ->
-    	P = mnesia:read(cells, Coord, write),
-		io:format("Found cell ~w~n", [P]),
-    	mnesia:write(P#cells{creature=Pid})
+    	[P] = mnesia:read(cells, Coord, write),
+%% 		io:format("Found cell ~w~n", [P]),
+%% 		io:format("Try to write Pid ~w~n", [Pid]),
+		NewR = P#cells{creature = Pid},
+%% 		io:format("Try to write ~w~n", [NewR]),
+    	mnesia:write(NewR)
   	end,
 	{atomic, Results} = mnesia:transaction(Fun),
 	Results.

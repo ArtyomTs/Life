@@ -33,9 +33,16 @@ born(X, Y) ->
 where_am_i({X, Y}) ->
 	Result = turtle:get_cell(X,Y),
 	io:format("Creature found itself on the ~w cell~n", [Result]),
-	Result.
+	parse(Result).
+
+parse([]) ->
+	hell;
+parse([{_, {X, Y}, Temp, Creature} | _ ]) ->
+	{X, Y, Temp, Creature}.
+
 
 settle_or_run({X, Y, Temp, none}) ->
+	%% remember natural temp for new creature
 	State = {{X, Y, Temp, none}, Temp},
 	settle(State);
 settle_or_run(Cell) ->
@@ -45,7 +52,9 @@ settle_or_run(Cell) ->
 	move_to(random_cell(Cell), State).
 
 random_cell({X, Y, _, _}) ->
-	{X + 1, Y + 1}.
+	XStep = random:uniform(3) - 2,
+	YStep = random:uniform(3) - 2,
+	{X + XStep, Y + YStep}.
 
 move_to(Coord, State) ->
 	{OldCell, _} = State,
@@ -65,7 +74,8 @@ settle(State) ->
 %% Turtle should remember the cell is empty
 %%----------------------------------------
 leave(State) ->
-	turtle:free_cell(self()),
+	{X, Y, _Temp, _Creature} = State,
+	turtle:free_cell(X, Y),
 	ok.
 
 %%----------------------------------------
@@ -73,32 +83,38 @@ leave(State) ->
 %% Creature should die of fight or settle
 %%----------------------------------------
 
+enter(hell, _State) ->
+	io:format("Creature died~n"),
+	died;
 enter(NewCell, State) ->
-	{NewX, NewY, _, _} = NewCell,
-	{{X, Y, Temp, Creature}, Temp} = State,
-	NewState = {{NewX, NewY, Temp, Creature}, Temp},
+	{NewX, NewY, Temp, _} = NewCell,
+	{{_X, _Y, _Temp, Creature}, NTemp} = State,
+	io:format("Creature ~w ~n", [State]),
+	NewState = {{NewX, NewY, Temp, Creature}, NTemp},
+	io:format("Creature ~w ~n", [NewState]),
 	io:format("Creature on the ~w ~w cell~n", [NewX, NewY]),
-	Fate = survive(NewState),
-	if
-	Fate == live ->
-		settle(NewState);
-	true ->
-		io:format("Creature died~n"),
-		ok
-	end.
+	survive(fate(NewState), NewState).
 
-survive(State) ->
+survive(die, _State) ->
+	io:format("Creature died~n"),
+	died;
+survive(_Fate, State) ->
+	settle(State).
+
+fate(State) ->
 	{{_, _, Temp, _}, Ntemp} = State,
 	MinTemp = Ntemp - 20,
 	MaxTemp = Ntemp + 20,
+	io:format("Try to survive with ~w(~w - ~w) in ~w~n", [Ntemp, MinTemp, MaxTemp, Temp]),
 	if
 	Temp > MaxTemp ->
-		die;
+		Res = die;
 	Temp < MinTemp ->
-		die;
+		Res = die;
 	true ->
-		live
-	end.
+		Res = live
+	end,
+	Res.
 
 own({X, Y, Temp, none}, State) ->
 	ok.
