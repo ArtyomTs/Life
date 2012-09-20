@@ -31,7 +31,7 @@ born() ->
 %% Store the World
 %%---------------------------
 hold(World) ->
-	io:format("The World given"),
+	io:format("The World given~n"),
 	lists:foreach(fun(Cell) -> store_cell(Cell) end, World),
 	ok.
 %%
@@ -39,13 +39,13 @@ hold(World) ->
 %%
 
 store_cell({X, Y, Temp}) ->
-	io:format("Storing cell ~w, ~w, ~w", [X, Y, Temp]),
+	io:format("Storing cell ~w, ~w, ~w~n", [X, Y, Temp]),
 	Cell = #cells{x=X, y=Y, temp=Temp, creature=none},
 	Fun = fun() ->
 		 	mnesia:write(Cell)
 		  end,
 	{Res, Message} = mnesia:transaction(Fun),
-	io:format("Result = ~w", [Message]),
+	io:format("Result = ~w~n", [Message]),
 	Res.
 
 
