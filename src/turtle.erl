@@ -12,7 +12,7 @@
 %%
 %% Exported Functions
 %%
--export([born/0, hold/1, get_cell/2, free_cell/1, settle_creature/2]).
+-export([born/0, hold/1, get_cell/2, free_cell/1, settle_creature/2, show_the_world/0]).
 
 %%
 %% API Functions
@@ -24,13 +24,14 @@
 born() ->
 	mnesia:create_schema([node()]),
 	mnesia:start(),
-	mnesia:create_table(cells, [{attributes, record_info(fields, cell)}]),
+	mnesia:create_table(cells, [{attributes, record_info(fields, cells)}]),
 	ok.
 
 %%---------------------------
 %% Store the World
 %%---------------------------
 hold(World) ->
+	io:format("The World given"),
 	lists:foreach(fun(Cell) -> store_cell(Cell) end, World),
 	ok.
 %%
@@ -38,11 +39,15 @@ hold(World) ->
 %%
 
 store_cell({X, Y, Temp}) ->
-	Cell = #cell{x=X, y=Y, temp=Temp, creature=none},
+	io:format("Storing cell ~w, ~w, ~w", [X, Y, Temp]),
+	Cell = #cells{x=X, y=Y, temp=Temp, creature=none},
 	Fun = fun() ->
 		 	mnesia:write(Cell)
 		  end,
-	mnesia:transaction(Fun).
+	{Res, Message} = mnesia:transaction(Fun),
+	io:format("Result = ~w", [Message]),
+	Res.
+
 
 get_cell(X, Y) ->
 	Fun = 
@@ -50,21 +55,32 @@ get_cell(X, Y) ->
             mnesia:match_object({cells, X , Y, '_', '_' } )
         end,
     {atomic, Results} = mnesia:transaction(Fun),
-    Results.
+    [{_, X, Y, Temp, Creatire} | _ ] = Results,
+	{X, Y, Temp, Creatire}.
 
 free_cell(Pid) ->
   	Fun = fun() ->
     	[P] = mnesia:wread({cells, {'_', '_', '_', Pid} }),
-    	mnesia:write(P#cell{creature=none})
+    	mnesia:write(P#cells{creature=none})
   	end,
 	{atomic, Results} = mnesia:transaction(Fun),
 	Results.
 
 settle_creature(Data, Pid) ->
-	{X, Y, _, _} = Data,
+	{X, Y, Temp, Creature} = Data,
+	io:format("Try to settle at ~w ~w~n", [X, Y]),
   	Fun = fun() ->
-    	[P] = mnesia:wread({cells, {X , Y, '_', '_'} }),
-    	mnesia:write(P#cell{creature=Pid})
+    	P = mnesia:read(cells, Data, write),
+		io:format("Found cell ~w~n", [P]),
+    	mnesia:write(P#cells{creature=Pid})
   	end,
 	{atomic, Results} = mnesia:transaction(Fun),
 	Results.
+
+show_the_world() ->
+    mnesia:transaction( 
+    fun() ->
+        qlc:eval( qlc:q(
+            [ X || X <- mnesia:table(cells) ] 
+        )) 
+    end ).

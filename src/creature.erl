@@ -54,7 +54,7 @@ move_to(Coord, State) ->
 
 settle(State) ->
 	{Cell, _} = State,
-	turtle:settle_creature(State, self()),
+	turtle:settle_creature(Cell, self()),
 	reproduce(State),
 	rest(),
 	move_to(random_cell(Cell), State),

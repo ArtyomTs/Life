@@ -1,4 +1,4 @@
--record(cell, {x,
+-record(cells, {x,
                y,
                temp,
                creature}).
