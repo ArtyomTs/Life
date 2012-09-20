@@ -12,7 +12,7 @@
 %%
 %% Exported Functions
 %%
--export([born/0, hold/1, get_cell/2, free_cell/1, settle_creature/2, show_the_world/0]).
+-export([born/0, die/0, hold/1, get_cell/2, free_cell/1, settle_creature/2, show_the_world/0]).
 
 %%
 %% API Functions
@@ -24,9 +24,11 @@
 born() ->
 	mnesia:create_schema([node()]),
 	mnesia:start(),
-	mnesia:create_table(cells, [{attributes, record_info(fields, cells)}]),
-	ok.
+	mnesia:create_table(cells, [{attributes, record_info(fields, cells)}]).
 
+die() ->
+  mnesia:stop(),
+  mnesia:delete_schema([node()]).
 %%---------------------------
 %% Store the World
 %%---------------------------
@@ -40,10 +42,10 @@ hold(World) ->
 
 store_cell({X, Y, Temp}) ->
 	io:format("Storing cell ~w, ~w, ~w~n", [X, Y, Temp]),
-	Cell = #cells{x=X, y=Y, temp=Temp, creature=none},
+	Cell = #cells{coord={X, Y}, temp=Temp, creature=none},
 	Fun = fun() ->
-		 	mnesia:write(Cell)
-		  end,
+		 	    mnesia:write(Cell)
+		    end,
 	{Res, Message} = mnesia:transaction(Fun),
 	io:format("Result = ~w~n", [Message]),
 	Res.
@@ -52,25 +54,25 @@ store_cell({X, Y, Temp}) ->
 get_cell(X, Y) ->
 	Fun = 
         fun() ->
-            mnesia:match_object({cells, X , Y, '_', '_' } )
+            mnesia:match_object({cells, {X, Y}, '_', '_' } )
         end,
     {atomic, Results} = mnesia:transaction(Fun),
-    [{_, X, Y, Temp, Creatire} | _ ] = Results,
+    [{_, {X, Y}, Temp, Creatire} | _ ] = Results,
 	{X, Y, Temp, Creatire}.
 
 free_cell(Pid) ->
   	Fun = fun() ->
-    	[P] = mnesia:wread({cells, {'_', '_', '_', Pid} }),
+    	[P] = mnesia:wread({cells, {'_', '_', Pid} }),
     	mnesia:write(P#cells{creature=none})
   	end,
 	{atomic, Results} = mnesia:transaction(Fun),
 	Results.
 
 settle_creature(Data, Pid) ->
-	{X, Y, Temp, Creature} = Data,
-	io:format("Try to settle at ~w ~w~n", [X, Y]),
+	{Coord, Temp, Creature} = Data,
+	io:format("Try to settle at ~w~n", [Coord]),
   	Fun = fun() ->
-    	P = mnesia:read(cells, Data, write),
+    	P = mnesia:read(cells, Coord, write),
 		io:format("Found cell ~w~n", [P]),
     	mnesia:write(P#cells{creature=Pid})
   	end,
