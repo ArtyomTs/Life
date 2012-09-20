@@ -27,7 +27,7 @@ create() ->
 %%
 
 a_day_of_creatures() ->
-	born_creature(10).
+	born_creature(2).
 
 born_creature(0) ->
 	ok;

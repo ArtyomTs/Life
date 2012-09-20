@@ -65,8 +65,7 @@ move_to(Coord, State) ->
 settle(State) ->
 	{Cell, _} = State,
 	turtle:settle_creature(Cell, self()),
-	reproduce(State),
-	rest(),
+	rest(State),
 	move_to(random_cell(Cell), State),
 	ok.
 
@@ -85,7 +84,7 @@ leave(State) ->
 %%----------------------------------------
 
 enter(hell, _State) ->
-	io:format("Creature died~n"),
+	io:format("Creature ~w died~n", [self()]),
 	died;
 enter(NewCell, State) ->
 	{NewX, NewY, Temp, _} = NewCell,
@@ -95,14 +94,18 @@ enter(NewCell, State) ->
 	survive(fate(NewState), NewState).
 
 survive(die, _State) ->
-	io:format("Creature died~n"),
+	io:format("Creature ~w died~n", [self()]),
 	died;
 survive(reproduce, State) ->
 	io:format("Lets Reproduce!!!~n"),
 	reproduce(State),
-	settle(State);
+	own(creature_of(State), State);
 survive(_Fate, State) ->
-	settle(State).
+	own(creature_of(State),State).
+
+creature_of(State) ->
+	{{_, _, _, Creature}, _} = State,
+	Creature.
 
 fate(State) ->
 	{{_, _, Temp, _}, Ntemp} = State,
@@ -123,17 +126,53 @@ fate(State) ->
 	end,
 	Res.
 
-own({X, Y, Temp, none}, State) ->
-	ok.
+own(none, State) ->
+	settle(State);
+own(Creature, State) ->
+	fight(Creature, State).
+
+fight(Creature, State) ->
+	Adaptation = adaptation(State),
+	io:format("Creature ~w attacked to ~w !~n", [self(), Creature]),
+	Creature ! {fight, Adaptation, self()},
+	settle(State).
+
+adaptation(State) ->
+	{{_X, _Y, Temp, _Creature}, NTemp} = State,
+	m(Temp - NTemp).
+
+m(I) when I < 0 ->
+	-I;
+m(I) ->
+	I.
 
 reproduce(State) ->
 	io:format("Reproduce State ~w~n", [State]),
 	{{X, Y, _Temp, _Creature}, _NTemp} = State,
 	god:born_creature({X, Y}).
 
-rest() ->
+rest(State) ->
 	receive
+		{fight, Adaptation, Pid} ->
+			defend(Adaptation, Pid, State);
+		die ->
+			die(State)
 	after
 		1000 ->
 			true
 	end.
+
+defend(Adaptation, Pid, State) ->
+	MyAdapt = adaptation(State),
+	if 
+		MyAdapt >= Adaptation ->
+			Pid ! die;
+	true ->
+		die(State)
+	end.
+
+die(State) ->
+	io:format("Creature ~w has lost.~n", [self()]),
+	{Cell, _} = State,
+	leave(Cell),
+	exit(died).
