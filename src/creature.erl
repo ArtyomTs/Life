@@ -17,7 +17,7 @@
 %%
 
 born(X, Y) ->
-	io:format("Creature is borned on the ~w ~w cell~n", [X, Y]),
+	io:format("Creature ~w was born on the ~w ~w cell~n", [self(), X, Y]),
 	settle_or_run(where_am_i({X, Y})).
 	
 %%
@@ -44,7 +44,7 @@ parse([{_, {X, Y}, Temp, Creature} | _ ]) ->
 settle_or_run({X, Y, Temp, none}) ->
 	%% remember natural temp for new creature
 	State = {{X, Y, Temp, none}, Temp},
-	io:format("Natural temp is ~w~n", [Temp]),
+	io:format("Natural temp for ~w is ~w~n", [self(), Temp]),
 	settle(State);
 settle_or_run(Cell) ->
 	{X, Y, Temp , _} = Cell,
@@ -84,20 +84,20 @@ leave(State) ->
 %%----------------------------------------
 
 enter(hell, _State) ->
-	io:format("Creature ~w died~n", [self()]),
+	io:format("Creature ~w has fell to the hell~n", [self()]),
 	died;
 enter(NewCell, State) ->
 	{NewX, NewY, Temp, _} = NewCell,
 	{{_X, _Y, _Temp, Creature}, NTemp} = State,
 	NewState = {{NewX, NewY, Temp, Creature}, NTemp},
-	io:format("Creature on the ~w ~w cell~n", [NewX, NewY]),
+	io:format("Creature ~w went to the ~w ~w cell~n", [self(), NewX, NewY]),
 	survive(fate(NewState), NewState).
 
 survive(die, _State) ->
 	io:format("Creature ~w died~n", [self()]),
 	died;
 survive(reproduce, State) ->
-	io:format("Lets Reproduce!!!~n"),
+	io:format("~w Says: Lets Reproduce!!!~n", [self()]),
 	reproduce(State),
 	own(creature_of(State), State);
 survive(_Fate, State) ->
@@ -113,7 +113,7 @@ fate(State) ->
 	MaxTemp = Ntemp + 20,
 	MinRTemp = Ntemp - 10,
 	MaxRTemp = Ntemp + 10,
-	io:format("Try to survive with ~w(~w - ~w) in ~w~n", [Ntemp, MinTemp, MaxTemp, Temp]),
+	io:format("~w Triying to survive with ~w(~w - ~w) in ~w~n", [self(), Ntemp, MinTemp, MaxTemp, Temp]),
 	if
 	Temp > MaxTemp ->
 		Res = die;
@@ -125,6 +125,26 @@ fate(State) ->
 		Res = live
 	end,
 	Res.
+
+reproduce(State) ->
+	{{X, Y, _Temp, _Creature}, _NTemp} = State,
+	god:born_creature({X, Y}).
+
+rest(State) ->
+	receive
+		{fight, Adaptation, Pid} ->
+			defend(Adaptation, Pid, State);
+		die ->
+		  io:format("~wReceived die~n", [self()]),
+			die(State)
+	after
+		1000 ->
+			true
+	end.
+
+%%----------------------------------
+%% figting 
+%%----------------------------------
 
 own(none, State) ->
 	settle(State);
@@ -146,33 +166,20 @@ m(I) when I < 0 ->
 m(I) ->
 	I.
 
-reproduce(State) ->
-	io:format("Reproduce State ~w~n", [State]),
-	{{X, Y, _Temp, _Creature}, _NTemp} = State,
-	god:born_creature({X, Y}).
-
-rest(State) ->
-	receive
-		{fight, Adaptation, Pid} ->
-			defend(Adaptation, Pid, State);
-		die ->
-			die(State)
-	after
-		1000 ->
-			true
-	end.
-
 defend(Adaptation, Pid, State) ->
 	MyAdapt = adaptation(State),
+	io:format("Creature ~w(~w) defending from ~w(~w)~n", [self(), MyAdapt, Pid, Adaptation]),
 	if 
 		MyAdapt >= Adaptation ->
+    	io:format("Creature ~w(~w) has defended from ~w(~w)~n", [self(), MyAdapt, Pid, Adaptation]),
 			Pid ! die;
 	true ->
+	  io:format("Creature ~w(~w) eaten by ~w(~w)~n", [self(), MyAdapt, Pid, Adaptation]),
 		die(State)
 	end.
 
 die(State) ->
-	io:format("Creature ~w has lost.~n", [self()]),
+	io:format("Creature ~w was defeated.~n", [self()]),
 	{Cell, _} = State,
 	leave(Cell),
 	exit(died).
